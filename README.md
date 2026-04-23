@@ -1,18 +1,62 @@
-# HubSpot ETL Pipeline - V1 Portfolio
+# HubSpot ETL Pipeline — Portfolio V1
 
-Mini platform data autour de HubSpot, construite pour montrer une stack Python orientee
-API REST, ETL, Docker et logique CRM.
+Mini-plateforme **data + CRM** autour de **HubSpot**, pensée pour un entretien technique : intégration API, pipeline ETL léger, exposition **REST** avec **FastAPI**, visualisation simple côté navigateur, packaging **Docker** et gestion de projet avec **uv**.
+
+## Ce que ce repo démontre (recruteur)
+
+- **Intégration HubSpot** via l’API CRM v3 (contacts, entreprises, deals) avec token d’accès **côté serveur uniquement**.
+- **Architecture Python modulaire** : client HTTP dédié, services ETL (extract / transform / load), routeur API, configuration centralisée.
+- **API REST** documentable (FastAPI) et consommation côté UI en **Vanilla JS** (fetch), sans exposer de secrets.
+- **ETL orienté fichiers** : exports CSV dans `data/raw` (payload HubSpot) et `data/processed` (données normalisées).
+- **Expérience utilisateur** : dashboard avec indicateur de chargement pendant les appels HubSpot, gestion d’erreurs lisible.
+- **Industrialisation** : `Dockerfile`, lockfile `uv`, `.env.example`, structure de projet claire.
+
+## Aperçu visuel (captures)
+
+### Dashboard analytics (données de démo HubSpot)
+
+Vue d’ensemble des KPI, graphiques (Chart.js) et listes récentes, alimentés par les endpoints `/api/*`.
+
+![Dashboard HubSpot — vue principale](images/screenshoot/sales_demo_dashboard.png)
+
+![Dashboard HubSpot — vue complémentaire](images/screenshoot/sales_demo_dashboard_2.png)
+
+### Préparation côté HubSpot (contexte métier)
+
+Import de fichiers de démonstration dans le portail HubSpot (jeu de données CRM cohérent pour la démo).
+
+![Import de fichiers dans HubSpot](images/screenshoot/file_import.png)
+
+Configuration d’une application / token d’accès pour consommer l’API (accès contrôlé, scopes à définir selon les objets).
+
+![Application HubSpot — accès API](images/screenshoot/legacy_app.png)
 
 ## Stack
 
-- Python 3.12
-- FastAPI
-- httpx
-- python-dotenv
-- Jinja2
-- uv
+| Domaine | Choix |
+| --- | --- |
+| Langage | Python 3.12 |
+| API | FastAPI |
+| HTTP client | httpx |
+| Config | python-dotenv |
+| Templates | Jinja2 (page `/`) |
+| UI dashboard | Vanilla JS + Tailwind (CDN) + Chart.js (CDN) |
+| Packaging deps | uv (`pyproject.toml`, `uv.lock`) |
+| Conteneur | Docker |
 
-## Structure
+## Architecture (résumé)
+
+```text
+Navigateur  →  FastAPI (/ et /api/*)
+                    ↓
+            services ETL (extract / transform / load)
+                    ↓
+            client HubSpot (httpx, pagination)
+                    ↓
+            API HubSpot (CRM v3)
+```
+
+Dossiers principaux :
 
 ```text
 hubspot-etl-pipeline/
@@ -21,8 +65,10 @@ hubspot-etl-pipeline/
 ├── uv.lock
 ├── Dockerfile
 ├── data/
-│   ├── raw/
-│   └── processed/
+│   ├── raw/              # exports bruts (gitignored)
+│   ├── processed/        # exports normalisés (gitignored)
+│   └── *.csv             # jeux de démo optionnels à la racine data/
+├── images/screenshoot/   # captures pour README / portfolio
 ├── app/
 │   ├── main.py
 │   ├── config.py
@@ -40,34 +86,71 @@ hubspot-etl-pipeline/
 
 ## Configuration
 
-1. Copier le fichier d'environnement:
+1. Copier les variables d’environnement :
 
 ```bash
 cp .env.example .env
 ```
 
-2. Remplir `HUBSPOT_ACCESS_TOKEN` dans `.env`.
+2. Renseigner dans `.env` :
 
-## Installation et lancement (uv)
+- `HUBSPOT_ACCESS_TOKEN` — token d’accès (private app / token serveur).
+- `CLIENT_SECRET` — présent pour alignement avec ton compte HubSpot ; **non utilisé en V1** (pas d’OAuth dans cette version).
+- `HUBSPOT_BASE_URL` — optionnel, par défaut `https://api.hubapi.com`.
+
+## Installation et exécution locale (uv)
 
 ```bash
 uv sync
 uv run uvicorn app.main:app --reload
 ```
 
-Application: `http://127.0.0.1:8000`
+Application : [http://127.0.0.1:8000](http://127.0.0.1:8000)
+
+## Docker
+
+```bash
+docker build -t hubspot-etl-pipeline .
+docker run --rm -p 8000:8000 --env-file .env hubspot-etl-pipeline
+```
+
+Puis ouvrir [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
 ## Endpoints V1
 
-- `GET /api/contacts`
-- `GET /api/companies`
-- `GET /api/deals`
-- `GET /api/summary`
-- `GET /`
+| Méthode | Chemin | Rôle |
+| --- | --- | --- |
+| GET | `/` | Page dashboard (HTML + chargement des données via `/api/*`) |
+| GET | `/api/contacts` | Liste des contacts (propriétés utiles) |
+| GET | `/api/companies` | Liste des entreprises |
+| GET | `/api/deals` | Liste des deals |
+| GET | `/api/summary` | KPI agrégés (totaux + montant deals) |
 
-## Notes V1
+Propriétés HubSpot ciblées (V1) :
 
-- Le token HubSpot reste uniquement cote backend.
-- Les exports CSV sont ecrits dans `data/raw` et `data/processed`.
-- OAuth est volontairement hors scope pour cette V1.
+- **Contacts** : `firstname`, `lastname`, `email`, `phone`
+- **Companies** : `name`, `domain`, `industry`, `phone`
+- **Deals** : `dealname`, `amount`, `dealstage`, `pipeline`, `closedate`
 
+## Sécurité (important en entretien)
+
+- Le **token HubSpot ne sort jamais** vers le navigateur : seul le backend appelle HubSpot.
+- Le frontend consomme **uniquement** ton API FastAPI sur le même origine en local.
+- Ne jamais committer `.env` ni secrets (fichier ignoré par Git).
+
+## Limites assumées (V1 honnête)
+
+- Pas d’OAuth HubSpot dans cette version (token statique / private app).
+- Pas de base de données : persistance fichier CSV pour la démo ETL.
+- Pas de file d’attente / worker : synchronisation déclenchée par requêtes HTTP.
+
+## Pistes V2 (si on creuse en entretien)
+
+- OAuth2 HubSpot + refresh token, rotation des secrets.
+- Persistance SQL + modèle de données + idempotence du load.
+- Cache Redis et rate limiting côté API.
+- CI (lint + tests) et OpenAPI publiée.
+
+---
+
+Projet orienté **portfolio** : lisible, expliquable en 5 minutes, extensible sans sur-ingénierie.
