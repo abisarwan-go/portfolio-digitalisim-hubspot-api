@@ -1,0 +1,14 @@
+[project]
+name = "hubspot-etl-pipeline"
+version = "0.1.0"
+description = "Portfolio HubSpot ETL platform with FastAPI dashboard"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.136.0",
+    "httpx>=0.28.1",
+    "jinja2>=3.1.6",
+    "python-dotenv>=1.2.2",
+    "uvicorn>=0.38.0",
+]
+

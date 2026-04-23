@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HubSpot V1 Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>HubSpot CRM Dashboard</h1>
+    <p class="subtitle">V1 portfolio snapshot built with FastAPI and ETL services.</p>
+
+    <section class="cards">
+      <article class="card">
+        <h2>Contacts</h2>
+        <p>{{ summary.total_contacts }}</p>
+      </article>
+      <article class="card">
+        <h2>Companies</h2>
+        <p>{{ summary.total_companies }}</p>
+      </article>
+      <article class="card">
+        <h2>Deals</h2>
+        <p>{{ summary.total_deals }}</p>
+      </article>
+      <article class="card">
+        <h2>Total Deal Amount</h2>
+        <p>{{ summary.total_deals_amount }}</p>
+      </article>
+    </section>
+
+    <section class="lists">
+      <div>
+        <h3>Recent Contacts</h3>
+        <ul>
+          {% for contact in contacts_preview %}
+          <li>{{ contact.firstname }} {{ contact.lastname }} - {{ contact.email }}</li>
+          {% else %}
+          <li>No contacts available.</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div>
+        <h3>Recent Companies</h3>
+        <ul>
+          {% for company in companies_preview %}
+          <li>{{ company.name }} - {{ company.domain }}</li>
+          {% else %}
+          <li>No companies available.</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div>
+        <h3>Recent Deals</h3>
+        <ul>
+          {% for deal in deals_preview %}
+          <li>{{ deal.dealname }} - {{ deal.amount }}</li>
+          {% else %}
+          <li>No deals available.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+
