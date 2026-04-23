@@ -19,18 +19,21 @@ except PermissionError:
 @dataclass(frozen=True)
 class Settings:
     hubspot_access_token: str
+    client_secret: str
     hubspot_base_url: str = "https://api.hubapi.com"
     page_size: int = 100
 
     @classmethod
     def from_env(cls) -> "Settings":
         token = os.getenv("HUBSPOT_ACCESS_TOKEN", "").strip()
+        client_secret = os.getenv("CLIENT_SECRET", "").strip()
         if not token:
-            raise ValueError(
-                "HUBSPOT_ACCESS_TOKEN is missing. Add it to .env before running."
-            )
+            raise ValueError("HUBSPOT_ACCESS_TOKEN is missing in .env.")
+        if not client_secret:
+            raise ValueError("CLIENT_SECRET is missing in .env.")
         return cls(
             hubspot_access_token=token,
+            client_secret=client_secret,
             hubspot_base_url=os.getenv("HUBSPOT_BASE_URL", "https://api.hubapi.com"),
         )
 

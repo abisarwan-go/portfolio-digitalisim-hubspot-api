@@ -3,66 +3,338 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HubSpot V1 Dashboard</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <title>HubSpot CRM Analytics Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
-  <main class="container">
-    <h1>HubSpot CRM Dashboard</h1>
-    <p class="subtitle">V1 portfolio snapshot built with FastAPI and ETL services.</p>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <header class="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+      <div>
+        <h1 class="text-xl font-semibold tracking-tight">HubSpot CRM Analytics</h1>
+        <p class="text-sm text-slate-400">FastAPI + Vanilla JS + Chart.js portfolio dashboard</p>
+      </div>
+      <div class="text-right text-xs text-slate-400">
+        <p>Last sync</p>
+        <p id="lastSync" class="font-medium text-slate-200">Loading...</p>
+      </div>
+    </div>
+  </header>
 
-    <section class="cards">
-      <article class="card">
-        <h2>Contacts</h2>
-        <p>{{ summary.total_contacts }}</p>
+  <main id="dashboardMain" class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8" aria-busy="false">
+    <section id="loadingBanner" class="hidden rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-indigo-100">
+      <div class="flex items-center gap-3">
+        <span class="inline-block h-3 w-3 animate-pulse rounded-full bg-indigo-300"></span>
+        <p id="loadingText" class="text-sm font-medium">Syncing HubSpot data...</p>
+      </div>
+    </section>
+
+    <section id="errorBanner" class="hidden rounded-xl border border-rose-500/40 bg-rose-500/10 p-4 text-rose-200">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <p id="errorText" class="text-sm"></p>
+        <button id="retryBtn" class="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60">
+          Retry
+        </button>
+      </div>
+    </section>
+
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 transition hover:-translate-y-0.5 hover:border-indigo-400/40">
+        <p class="text-xs uppercase text-slate-400">Contacts</p>
+        <p id="kpiContacts" class="mt-2 text-3xl font-semibold">0</p>
       </article>
-      <article class="card">
-        <h2>Companies</h2>
-        <p>{{ summary.total_companies }}</p>
+      <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 transition hover:-translate-y-0.5 hover:border-indigo-400/40">
+        <p class="text-xs uppercase text-slate-400">Companies</p>
+        <p id="kpiCompanies" class="mt-2 text-3xl font-semibold">0</p>
       </article>
-      <article class="card">
-        <h2>Deals</h2>
-        <p>{{ summary.total_deals }}</p>
+      <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 transition hover:-translate-y-0.5 hover:border-indigo-400/40">
+        <p class="text-xs uppercase text-slate-400">Deals</p>
+        <p id="kpiDeals" class="mt-2 text-3xl font-semibold">0</p>
       </article>
-      <article class="card">
-        <h2>Total Deal Amount</h2>
-        <p>{{ summary.total_deals_amount }}</p>
+      <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 transition hover:-translate-y-0.5 hover:border-indigo-400/40">
+        <p class="text-xs uppercase text-slate-400">Total Amount</p>
+        <p id="kpiAmount" class="mt-2 text-3xl font-semibold">0</p>
       </article>
     </section>
 
-    <section class="lists">
-      <div>
-        <h3>Recent Contacts</h3>
-        <ul>
-          {% for contact in contacts_preview %}
-          <li>{{ contact.firstname }} {{ contact.lastname }} - {{ contact.email }}</li>
-          {% else %}
-          <li>No contacts available.</li>
-          {% endfor %}
-        </ul>
-      </div>
-      <div>
-        <h3>Recent Companies</h3>
-        <ul>
-          {% for company in companies_preview %}
-          <li>{{ company.name }} - {{ company.domain }}</li>
-          {% else %}
-          <li>No companies available.</li>
-          {% endfor %}
-        </ul>
-      </div>
-      <div>
-        <h3>Recent Deals</h3>
-        <ul>
-          {% for deal in deals_preview %}
-          <li>{{ deal.dealname }} - {{ deal.amount }}</li>
-          {% else %}
-          <li>No deals available.</li>
-          {% endfor %}
-        </ul>
-      </div>
+    <section class="grid gap-4 lg:grid-cols-3">
+      <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 lg:col-span-2">
+        <h2 class="mb-3 text-sm font-semibold text-slate-300">Objects Overview</h2>
+        <canvas id="overviewChart" height="120"></canvas>
+      </article>
+      <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+        <h2 class="mb-3 text-sm font-semibold text-slate-300">Deals by Stage</h2>
+        <canvas id="stageChart" height="120"></canvas>
+      </article>
+    </section>
+
+    <section class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+      <h2 class="mb-3 text-sm font-semibold text-slate-300">Top Deal Amounts</h2>
+      <canvas id="amountChart" height="96"></canvas>
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-3">
+      <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+        <div class="mb-3 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-slate-300">Recent Contacts</h3>
+          <input id="contactSearch" class="w-28 rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-xs" placeholder="Search">
+        </div>
+        <ul id="contactList" class="space-y-2 text-sm text-slate-300"></ul>
+      </article>
+      <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+        <h3 class="mb-3 text-sm font-semibold text-slate-300">Recent Companies</h3>
+        <ul id="companyList" class="space-y-2 text-sm text-slate-300"></ul>
+      </article>
+      <article class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+        <h3 class="mb-3 text-sm font-semibold text-slate-300">Recent Deals</h3>
+        <ul id="dealList" class="space-y-2 text-sm text-slate-300"></ul>
+      </article>
     </section>
   </main>
+
+  <script>
+    const state = {
+      summary: null,
+      contacts: [],
+      companies: [],
+      deals: [],
+      charts: {},
+      isLoading: false
+    };
+
+    const initialError = "{{ error_message|default('', true)|e }}";
+    const els = {
+      lastSync: document.getElementById("lastSync"),
+      errorBanner: document.getElementById("errorBanner"),
+      errorText: document.getElementById("errorText"),
+      retryBtn: document.getElementById("retryBtn"),
+      contactSearch: document.getElementById("contactSearch"),
+      dashboardMain: document.getElementById("dashboardMain"),
+      loadingBanner: document.getElementById("loadingBanner"),
+      loadingText: document.getElementById("loadingText")
+    };
+
+    const listEls = {
+      contactList: document.getElementById("contactList"),
+      companyList: document.getElementById("companyList"),
+      dealList: document.getElementById("dealList")
+    };
+
+    function showError(message) {
+      els.errorText.textContent = message;
+      els.errorBanner.classList.remove("hidden");
+    }
+
+    function clearError() {
+      els.errorBanner.classList.add("hidden");
+      els.errorText.textContent = "";
+    }
+
+    function setLoading(isLoading) {
+      state.isLoading = isLoading;
+      els.dashboardMain.setAttribute("aria-busy", String(isLoading));
+      els.loadingBanner.classList.toggle("hidden", !isLoading);
+      els.retryBtn.disabled = isLoading;
+      if (isLoading) {
+        els.loadingText.textContent = "Syncing HubSpot data...";
+      }
+    }
+
+    async function fetchJson(url) {
+      const response = await fetch(url);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        const detail = payload.detail || response.statusText;
+        throw new Error(`${url} failed (${response.status}): ${detail}`);
+      }
+      return response.json();
+    }
+
+    function animateCounter(elementId, targetValue) {
+      const el = document.getElementById(elementId);
+      const start = 0;
+      const steps = 24;
+      let current = 0;
+      const increment = (targetValue - start) / steps;
+      const timer = setInterval(() => {
+        current += increment;
+        if (Math.round(current) >= targetValue) {
+          el.textContent = Number(targetValue).toLocaleString();
+          clearInterval(timer);
+          return;
+        }
+        el.textContent = Math.round(current).toLocaleString();
+      }, 20);
+    }
+
+    function renderKpis() {
+      const summary = state.summary || {};
+      animateCounter("kpiContacts", summary.total_contacts || 0);
+      animateCounter("kpiCompanies", summary.total_companies || 0);
+      animateCounter("kpiDeals", summary.total_deals || 0);
+      document.getElementById("kpiAmount").textContent = Number(summary.total_deals_amount || 0).toLocaleString();
+    }
+
+    function groupedDealsByStage(deals) {
+      const grouped = {};
+      deals.forEach((deal) => {
+        const stage = deal.dealstage || "unknown";
+        grouped[stage] = (grouped[stage] || 0) + 1;
+      });
+      return grouped;
+    }
+
+    function topDealsByAmount(deals, count = 8) {
+      return deals
+        .map((deal) => ({ name: deal.dealname || "Unnamed", amount: Number(deal.amount || 0) }))
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, count);
+    }
+
+    function destroyChart(name) {
+      if (state.charts[name]) {
+        state.charts[name].destroy();
+      }
+    }
+
+    function renderCharts() {
+      const summary = state.summary || {};
+      const stageData = groupedDealsByStage(state.deals);
+      const topDeals = topDealsByAmount(state.deals);
+
+      destroyChart("overview");
+      destroyChart("stage");
+      destroyChart("amount");
+
+      state.charts.overview = new Chart(document.getElementById("overviewChart"), {
+        type: "bar",
+        data: {
+          labels: ["Contacts", "Companies", "Deals"],
+          datasets: [{
+            label: "Total records",
+            data: [
+              summary.total_contacts || 0,
+              summary.total_companies || 0,
+              summary.total_deals || 0
+            ],
+            backgroundColor: ["#6366f1", "#22d3ee", "#f59e0b"]
+          }]
+        },
+        options: { plugins: { legend: { display: false } } }
+      });
+
+      state.charts.stage = new Chart(document.getElementById("stageChart"), {
+        type: "doughnut",
+        data: {
+          labels: Object.keys(stageData),
+          datasets: [{
+            data: Object.values(stageData),
+            backgroundColor: ["#8b5cf6", "#10b981", "#f97316", "#3b82f6", "#ef4444", "#14b8a6"]
+          }]
+        },
+        options: { plugins: { legend: { labels: { color: "#cbd5e1" } } } }
+      });
+
+      state.charts.amount = new Chart(document.getElementById("amountChart"), {
+        type: "line",
+        data: {
+          labels: topDeals.map((d) => d.name),
+          datasets: [{
+            label: "Amount",
+            data: topDeals.map((d) => d.amount),
+            borderColor: "#38bdf8",
+            backgroundColor: "rgba(56, 189, 248, 0.2)",
+            fill: true,
+            tension: 0.35
+          }]
+        },
+        options: {
+          scales: {
+            x: { ticks: { color: "#94a3b8" } },
+            y: { ticks: { color: "#94a3b8" } }
+          },
+          plugins: { legend: { labels: { color: "#cbd5e1" } } }
+        }
+      });
+    }
+
+    function renderList(target, items, formatter) {
+      target.innerHTML = "";
+      if (!items.length) {
+        const empty = document.createElement("li");
+        empty.className = "text-slate-500";
+        empty.textContent = "No data available.";
+        target.appendChild(empty);
+        return;
+      }
+      items.forEach((item) => {
+        const li = document.createElement("li");
+        li.className = "rounded-lg bg-slate-950/70 px-3 py-2";
+        li.textContent = formatter(item);
+        target.appendChild(li);
+      });
+    }
+
+    function renderLists() {
+      const contactQuery = (els.contactSearch.value || "").toLowerCase().trim();
+      const filteredContacts = state.contacts
+        .filter((c) => (`${c.firstname || ""} ${c.lastname || ""} ${c.email || ""}`).toLowerCase().includes(contactQuery))
+        .slice(0, 8);
+
+      renderList(
+        listEls.contactList,
+        filteredContacts,
+        (c) => `${c.firstname || ""} ${c.lastname || ""} - ${c.email || "n/a"}`
+      );
+      renderList(
+        listEls.companyList,
+        state.companies.slice(0, 8),
+        (c) => `${c.name || "Unnamed"} - ${c.domain || "n/a"}`
+      );
+      renderList(
+        listEls.dealList,
+        state.deals.slice(0, 8),
+        (d) => `${d.dealname || "Unnamed"} - ${Number(d.amount || 0).toLocaleString()}`
+      );
+    }
+
+    async function loadDashboardData() {
+      if (state.isLoading) {
+        return;
+      }
+      setLoading(true);
+      clearError();
+      els.lastSync.textContent = "Syncing...";
+      try {
+        const [summary, contacts, companies, deals] = await Promise.all([
+          fetchJson("/api/summary"),
+          fetchJson("/api/contacts"),
+          fetchJson("/api/companies"),
+          fetchJson("/api/deals")
+        ]);
+        state.summary = summary;
+        state.contacts = contacts;
+        state.companies = companies;
+        state.deals = deals;
+        renderKpis();
+        renderCharts();
+        renderLists();
+        els.lastSync.textContent = new Date().toLocaleString();
+      } catch (error) {
+        showError(error.message || "Unexpected dashboard error.");
+        els.lastSync.textContent = "Sync failed";
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    els.retryBtn.addEventListener("click", loadDashboardData);
+    els.contactSearch.addEventListener("input", renderLists);
+
+    if (initialError) {
+      showError(`Initial backend warning: ${initialError}`);
+    }
+    loadDashboardData();
+  </script>
 </body>
 </html>
-

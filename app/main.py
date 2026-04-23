@@ -23,6 +23,7 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
+    error_message = ""
     try:
         extract_service = ExtractService()
         transform_service = TransformService()
@@ -33,10 +34,11 @@ def home(request: Request):
         )
         deals = transform_service.transform_deals(extract_service.extract_deals())
         summary = summary_service.build_summary(contacts, companies, deals)
-    except (httpx.HTTPError, ValueError):
+    except (httpx.HTTPError, ValueError) as exc:
         contacts = []
         companies = []
         deals = []
+        error_message = str(exc)
         summary = {
             "total_contacts": 0,
             "total_companies": 0,
@@ -50,6 +52,7 @@ def home(request: Request):
         "contacts_preview": contacts[:5],
         "companies_preview": companies[:5],
         "deals_preview": deals[:5],
+        "error_message": error_message,
     }
     return templates.TemplateResponse(
         request=request,

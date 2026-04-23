@@ -8,3 +8,7 @@ hubspot.config.yml
 __pycache__/
 *.py[cod]
 app/.venv/
+
+# ETL runtime outputs
+data/raw/
+data/processed/
