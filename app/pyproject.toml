@@ -1,7 +1,9 @@
 [project]
 name = "app"
 version = "0.1.0"
-description = "Add your description here"
+description = "FastApi avec Hubpot integration"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "fastapi[standard]>=0.136.0",
+]
