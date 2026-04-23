@@ -1,0 +1,6 @@
+dealname,amount,dealstage,pipeline,closedate
+CRM Setup NovaTech,1200,appointmentscheduled,default,2026-05-15
+Data Sync BlueRetail,3400,qualifiedtobuy,default,2026-05-20
+API Integration DataForge,5600,presentationscheduled,default,2026-05-28
+Dashboard GreenLog,2700,decisionmakerboughtin,default,2026-06-03
+ETL Project Finelia,8200,contractsent,default,2026-06-10
