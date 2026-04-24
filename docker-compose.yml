@@ -1,0 +1,19 @@
+# FastAPI behind Nginx Proxy Manager: attach to the same Docker network as NPM.
+# Optional: set PROXY_NETWORK_NAME in .env if it differs from the default below.
+#
+# NPM (UI): Proxy Host → Forward to http://hubspot-api:8000 (scheme http), SSL on NPM.
+# Resource caps (deploy.resources.limits) are optional; this stack is already one small process.
+services:
+  hubspot-api:
+    build: .
+    env_file: .env
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+    networks:
+      - proxy-network
+
+networks:
+  proxy-network:
+    external: true
+    name: ${PROXY_NETWORK_NAME:-mono-repo-portofolio_proxy-network}
