@@ -1,6 +1,6 @@
 # HubSpot ETL Pipeline — Portfolio V1
 
-Mini-plateforme **data + CRM** autour de **HubSpot**, pensée pour un entretien technique : intégration API, pipeline ETL léger, exposition **REST** avec **FastAPI**, visualisation simple côté navigateur, packaging **Docker** et gestion de projet avec **uv**.
+Mini-plateforme **data + CRM** autour de **HubSpot**, conçue pour démontrer un savoir-faire technique en contexte réel : intégration API, pipeline ETL léger, exposition **REST** avec **FastAPI**, visualisation simple côté navigateur, packaging **Docker** et gestion de projet avec **uv**.
 
 ## Ce que ce repo démontre (recruteur)
 
@@ -132,7 +132,7 @@ Propriétés HubSpot ciblées (V1) :
 - **Companies** : `name`, `domain`, `industry`, `phone`
 - **Deals** : `dealname`, `amount`, `dealstage`, `pipeline`, `closedate`
 
-## Sécurité (important en entretien)
+## Sécurité (important en production et en candidature)
 
 - Le **token HubSpot ne sort jamais** vers le navigateur : seul le backend appelle HubSpot.
 - Le frontend consomme **uniquement** ton API FastAPI sur le même origine en local.
@@ -144,7 +144,7 @@ Propriétés HubSpot ciblées (V1) :
 - Pas de base de données : persistance fichier CSV pour la démo ETL.
 - Pas de file d’attente / worker : synchronisation déclenchée par requêtes HTTP.
 
-## Pistes V2 (si on creuse en entretien)
+## Pistes V2 (évolutions possibles du projet)
 
 - OAuth2 HubSpot + refresh token, rotation des secrets.
 - Persistance SQL + modèle de données + idempotence du load.
