@@ -2,6 +2,11 @@
 
 Mini-plateforme **data + CRM** autour de **HubSpot**, conçue pour démontrer un savoir-faire technique en contexte réel : intégration API, pipeline ETL léger, exposition **REST** avec **FastAPI**, visualisation simple côté navigateur, packaging **Docker** et gestion de projet avec **uv**.
 
+## Accès application
+
+- **Production (déployée)** : [https://hubspot-api.abisarwan.com/](https://hubspot-api.abisarwan.com/)
+- **Local (développement)** : [http://127.0.0.1:8000](http://127.0.0.1:8000) (port `8000`)
+
 ## Ce que ce repo démontre (recruteur)
 
 - **Intégration HubSpot** via l’API CRM v3 (contacts, entreprises, deals) avec token d’accès **côté serveur uniquement**.
